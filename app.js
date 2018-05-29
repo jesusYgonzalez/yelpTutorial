@@ -5,17 +5,24 @@ var express    = require("express"),
     passport   = require("passport"),
     LocalStrategy = require("passport-local"),
     Campground = require("./models/campground"),
+    methodOverride = require("method-override"),
     Comment    = require("./models/comment"),
     User       = require("./models/user"),
     seedDB     = require("./seeds");
+
+//Requiring routes
+var commentRoutes    = require("./routes/comments"),
+    campgroundRoutes = require("./routes/campgrounds"),
+    indexRoutes      = require("./routes/index");
 
 
 mongoose.connect("mongodb://localhost/yelpTutorial");
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public"));
+app.use(methodOverride("_method"));
 
-// seedDB();
+// seedDB(); //seed the database
 
 // PASSPORT CONFIG
 app.use(require("express-session")({
@@ -29,138 +36,25 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-
-app.get("/", function(req, res) {
-  res.render("landing");
+app.use(function(req, res, next) {
+    res.locals.currentUser = req.user;
+    next();
 });
 
-//INDEX
-app.get("/campgrounds", function(req, res) {
-  Campground.find({}, function(err, allCampgrounds) {
-    if(err) {
-      console.log(err);
-    } else {
-      res.render("campgrounds/index", {campgrounds: allCampgrounds});
-    }
-  });
-});
-
-//CREATE
-app.post("/campgrounds", function(req, res) {
-  var name = req.body.name;
-  var image = req.body.image;
-  var desc = req.body.description;
-  var newCampground = {name: name, image: image, description: desc};
-    Campground.create(newCampground, function(err, newlyCreated) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.redirect("/campgrounds");
-      }
-    });
-});
-
-
-app.get("/campgrounds/new", function(req, res) {
-  res.render("campgrounds/new");
-});
-
-//SHOW
-app.get("/campgrounds/:id", function(req, res) {
-  Campground.findById(req.params.id).populate("comments").exec(function(err, foundCampground) {
-    if(err) {
-      console.log(err);
-    } else {
-      console.log(foundCampground);
-      res.render("campgrounds/show", {campground: foundCampground});
-    }
-  });
-});
-
-
-
-// COMMENTS ROUTES
-app.get("/campgrounds/:id/comments/new", function(req, res) {
-  Campground.findById(req.params.id, function (err, campground) {
-      if(err) {
-        console.log(err);
-      } else {
-          res.render("comments/new", {campground: campground});
-      }
-  });
-});
-
-app.post("/campgrounds/:id/comments", function (req, res) {
-   Campground.findById(req.params.id, function (err, campground) {
-      if(err) {
-        console.log(err);
-        res.redirect("/campgrounds");
-      } else {
-        Comment.create(req.body.comment, function (err, comment) {
-           if(err) {
-             console.log(err);
-           } else {
-             campground.comments.push(comment);
-             campground.save();
-             res.redirect('/campgrounds/' + campground._id);
-           }
-        });
-      }
-   });
-});
-
-
-// AUTH ROUTES
-// Show register form
-app.get("/register", function(req, res) {
-    res.render("register");
-});
-//handle sign up logic
-app.post("/register", function(req,res) {
-    var newUser = new User({username: req.body.username}); //Newly Created user//
-    User.register(newUser, req.body.password, function(err, user) {
-        if(err) {
-            console.log(err);
-            return res.render("register");
-        }
-        passport.authenticate("local")(req, res, function() {
-            res.redirect("/campgrounds");
-        });
-    });
-});
-
-//Show login form
-app.get("/login", function(req, res) {
-   res.render("login");
-});
-//Handling login logic
-app.post("/login", function(req, res) {
-    req.send("Login logic goes here");
-});
-
+// optimized for campgrounds.js route paths
+app.use("/", indexRoutes);
+app.use("/campgrounds/:id/comments", commentRoutes);
+app.use("/campgrounds", campgroundRoutes);
 
 
 app.listen(3000, function() {
   console.log('app is running in port 3000');
 });
 
-
-
-
-
-
  
-
-
 
 // HAVE TO GET MAILING ADDRESS AND SEND IT TO THE VA
 // 800 741 8387 ext 5384 Celia Spencer from Loma Linda Va.
-
-
-
-
-
-
 
 
 
