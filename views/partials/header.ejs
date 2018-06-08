@@ -48,6 +48,17 @@
     </div>
   </div> <!-- END NAVBAR -->
 
+  <div class="container">
+    <% if(error && error.length > 0) { %>
+      <div class="alert alert-danger" role="alert"><%= error %></div>
+  </div>
+    <% } %>
+
+  <div class="container">
+      <% if(success && success.length > 0) { %>
+    <div class="alert alert-success" role="alert"><%= success %></div>
+  </div>
+  <% } %>
 
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
